@@ -9,7 +9,7 @@ target location using a local vision-language model. It exposes the predicted
 coordinates, a magnified crop, and an auditable JSON report. It does not click
 buttons or control your computer.
 
-![ShowUI suggestion for creating a task](docs/images/qwen-board-create.png)
+![Qwen3-VL suggestion for creating a task](docs/images/qwen-board-create.png)
 
 ## Run locally
 
@@ -29,7 +29,7 @@ red crosshair before acting. The first request downloads the model weights and
 loads them into RAM. The recorded Qwen CPU run took 9–17 seconds per task; other hardware can differ. ShowUI took over a minute per task in the recorded run.
 
 The application binds to loopback by default. `PORT`, `HOST`, `HF_HOME`,
-`HF_HUB_CACHE`, and `CLICKGUIDE_THREADS` (1–16; default 4) can be configured.
+`HF_HUB_CACHE`, `CLICKGUIDE_CACHE_DIR`, and `CLICKGUIDE_THREADS` (1–16; default 4) can be configured.
 `HF_HUB_OFFLINE=1` uses previously downloaded model files. Dependencies and model
 files must already be installed/downloaded before fully offline use.
 
@@ -44,14 +44,14 @@ files must already be installed/downloaded before fully offline use.
 Default model: `Qwen/Qwen3-VL-2B-Instruct` at revision `89644892e4d85e24eaac8bacfd4f463576704203`.
 Set `CLICKGUIDE_MODEL=showui` to run `showlab/ShowUI-2B` at revision
 `cabec4fcc48d15ffd3efe0b33ea9bc7d41509d60`. Qwen native integer coordinates use scale 1000; ShowUI uses fractional coordinates. The application uses
-Transformers' built-in Qwen2-VL implementation with `trust_remote_code=False` and
+Transformers' built-in Qwen3-VL and Qwen2-VL implementations with `trust_remote_code=False` and
 weights-only checkpoint loading. Inference is serialized and the model loads lazily.
 
 ## Measured outputs
 
-On the six original development tasks, Qwen3-VL hit **5/6** target regions and ShowUI hit **3/6**. Different backend preprocessing and CPU dtypes are documented; this is a comparison of configured pipelines, not a controlled model benchmark.
+Across five valid original development tasks, Qwen3-VL hit **4/5** target regions and ShowUI hit **3/5**. Different backend preprocessing and CPU dtypes are documented; this is a comparison of configured pipelines, not a controlled model benchmark.
 
-The repository includes six fixed tasks across three original fictional interfaces.
+The repository includes five valid tasks across three original fictional interfaces. One mislabeled download task was excluded: its button belonged to Project brief.pdf, while the instruction requested Quarterly report.pdf. The [original six-case records](evaluation/v1/README.md) are preserved unchanged; their historical 5/6 and 3/6 box-hit totals do not represent six valid tasks.
 Every result, including missed targets, is retained in
 [the ShowUI run](evaluation/local-cpu.json) and [the Qwen run](evaluation/qwen-cpu.json). Target regions are defined from
 the fixture geometry before inference; they are never sent to the model.
@@ -89,7 +89,7 @@ marked_image, detail, status, report, annotated_png = client.predict(
 - No browser state, DOM, accessibility tree, action history, or automatic clicking
   is used for inference. This is a single-step visual grounding tool.
 - Original temporary reports expire after one hour and are capped at 32 directories.
-  Gradio's additional upload/preview/download cache copies expire by age. Immutable
+  Gradio's additional upload/preview/download cache copies use an application-owned private directory with restart-safe age cleanup. Immutable
   public examples are exempt. Cleanup runs at startup, on new results, and every minute.
 - Screenshot content stays on the machine running the app. Hugging Face is contacted
   for model downloads. If you expose the app to others, their files run on your server.
@@ -116,7 +116,7 @@ serialization, report isolation/expiration, and UI failure states.
 ```text
 app.py                 Local workbench and Gradio API
 clickguide/core.py     Image validation, coordinate parsing and annotations
-clickguide/model.py    Pinned lazy ShowUI adapter
+clickguide/model.py    Pinned lazy Qwen3-VL and ShowUI adapters
 clickguide/service.py  Serialized processing, reports and cleanup
 examples/             Original fictional interfaces, screenshots and target boxes
 scripts/evaluate.py   Reproducible development evaluation

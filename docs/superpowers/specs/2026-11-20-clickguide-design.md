@@ -79,3 +79,9 @@ Tests protect image validation, coordinate boundaries, image marking, report
 isolation, and error behavior. At least one real model inference is inspected end
 to end. README reports actual measurements and includes corresponding output
 images. Local stage commits remain available even if remote write access is limited.
+
+## Release-review corrections
+
+One original download task was mislabeled (the button belongs to the project brief, not the quarterly report). Archive all six original annotations and both result JSON files unchanged under evaluation/v1, exclude that case from current tasks and metrics, and disclose the correction. Five valid cases remain: Qwen 4/5, ShowUI 3/5.
+
+Changing either input clears results. Per-session revision tokens reject obsolete completions and queued requests for prior inputs. Inputs are disabled while a UI prediction runs. PNG integrity is verified before decoding; coordinate parsers reject comments, duplicate JSON keys, and extra predictions. The private Gradio cache is scanned at startup and every minute independently of process memory.

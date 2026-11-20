@@ -1,5 +1,6 @@
 import ast
 import math
+import re
 import warnings
 from pathlib import Path
 
@@ -29,11 +30,19 @@ def load_image(path: str | Path) -> Image.Image:
                     raise ValueError(
                         "Screenshot must fit 4096 pixels per edge and 12 million pixels."
                     )
-                image = ImageOps.exif_transpose(source).convert("RGBA")
+                if source.format == "PNG":
+                    with path.open("rb") as stream:
+                        stream.seek(-12, 2)
+                        if stream.read() != b"\x00\x00\x00\x00IEND\xaeB`\x82":
+                            raise ValueError("PNG container is incomplete or malformed.")
+                source.verify()
+            with Image.open(path) as verified:
+                image = ImageOps.exif_transpose(verified).convert("RGBA")
                 background = Image.new("RGBA", image.size, "white")
                 return Image.alpha_composite(background, image).convert("RGB")
     except (
         OSError,
+        SyntaxError,
         TypeError,
         UnidentifiedImageError,
         Image.DecompressionBombError,
@@ -45,6 +54,9 @@ def load_image(path: str | Path) -> Image.Image:
 def parse_point(raw: str) -> Point:
     if not isinstance(raw, str) or len(raw) > 200:
         raise ValueError("Model did not return a valid coordinate pair.")
+    number = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+    if not re.fullmatch(r"[\[(]\s*" + number + r"\s*,\s*" + number + r"\s*[\])]", raw.strip()):
+        raise ValueError("Model must return only one coordinate pair.")
     try:
         value = ast.literal_eval(raw.strip())
     except (SyntaxError, ValueError, TypeError, RecursionError) as exc:

@@ -158,12 +158,16 @@ def parse_qwen_point(raw):
     if raw.startswith("```json\n") and raw.endswith("\n```"):
         raw = raw[8:-4]
     try:
-        value = json.loads(raw)
+        value = json.loads(raw, object_pairs_hook=_unique_object)
     except (ValueError, TypeError) as exc:
         raise ValueError("Model did not return a valid native point.") from exc
     if isinstance(value, list) and len(value) == 1:
         value = value[0]
     if isinstance(value, dict):
+        if set(value) - {"point_2d", "label"} or (
+            "label" in value and not isinstance(value["label"], str)
+        ):
+            raise ValueError("Expected one point and an optional text label.")
         value = value.get("point_2d")
     if (
         not isinstance(value, list)
@@ -172,6 +176,15 @@ def parse_qwen_point(raw):
     ):
         raise ValueError("Expected one integer point in the native 0–1000 coordinate range.")
     return value[0] / 1000, value[1] / 1000
+
+
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate prediction keys are not accepted.")
+        result[key] = value
+    return result
 
 
 def create_engine(name):

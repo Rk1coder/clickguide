@@ -43,3 +43,16 @@ def test_qwen_accepts_one_complete_json_code_fence():
     for raw in ['```json\n{"point_2d":[851,874]}', "Here: ```json\n[851,874]\n```"]:
         with pytest.raises(ValueError):
             parse_qwen_point(raw)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        '{"point_2d":[100,200],"point_2d":[800,900]}',
+        '{"point_2d":[100,200],"bbox_2d":[1,2,3,4]}',
+        '{"point_2d":[100,200],"other_target":[800,900]}',
+    ],
+)
+def test_qwen_rejects_duplicate_keys_and_additional_predictions(raw):
+    with pytest.raises(ValueError):
+        parse_qwen_point(raw)

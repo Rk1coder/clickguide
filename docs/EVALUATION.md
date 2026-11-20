@@ -1,6 +1,6 @@
 # Development evaluation
 
-Six tasks across three original fictional interfaces. This is development data, not an independent benchmark. The same six task instructions and target regions were retained across both runs. No target annotations are passed to a model.
+Five valid tasks across three original fictional interfaces. This is development data, not an independent benchmark. The same five valid task instructions and target regions were retained across both runs. No target annotations are passed to a model.
 
 ## Results
 
@@ -11,11 +11,14 @@ Six tasks across three original fictional interfaces. This is development data, 
 | board-create | [850, 115] | Yes | [861, 122] | Yes |
 | board-onboarding | [330, 218] | No | [321, 291] | Yes |
 | files-upload | [840, 38] | Yes | [874, 37] | Yes |
-| files-download | [870, 256] | No | [888, 297] | Yes |
 
-ShowUI: **3/6**. Qwen3-VL: **5/6**. Qwen still misses the Notifications task: it points into the main content rather than the sidebar target. The instruction is potentially ambiguous because the screen already displays notification settings; the original target annotation remains unchanged.
+ShowUI: **3/5**. Qwen3-VL: **4/5**. Qwen still misses the Notifications task: it points into the main content rather than the sidebar target. The instruction is potentially ambiguous because the screen already displays notification settings; the original target annotation remains unchanged.
 
 Point-in-box uses inclusive bounds of the predefined target. Coordinates map to the EXIF-oriented RGB image. At the right/bottom image boundary, normalized 1.0 is clamped to the final zero-based pixel. These results neither establish absent-target detection nor imply that every valid coordinate is a correct target.
+
+## Excluded annotation
+
+The original files-download instruction requested Quarterly report.pdf, but its target box covered the Download button on the Project brief.pdf row. That is not a valid semantic target. The original six-case JSON files and annotations are preserved byte for byte in [evaluation/v1](../evaluation/v1/README.md), including historical Qwen 5/6 and ShowUI 3/6 box-hit counts. Current records derive the five valid cases from those original runs and explicitly record the exclusion. No model point or target box was moved and no failed prediction was relabeled a hit. The excluded case remains visible in the archived output images.
 
 ## Configuration
 
@@ -30,7 +33,7 @@ Point-in-box uses inclusive bounds of the predefined target. Coordinates map to 
 | CPU threads | 4 | 4 |
 | Decoding | Greedy | Greedy |
 
-The defaults differ by backend. Latency and hit counts compare these configured pipelines and do not isolate model architecture. Qwen was selected after examining these development examples, so the six cases must not be described as a held-out test. Both adapters use immutable revisions recorded in every report.
+The defaults differ by backend. Latency and hit counts compare these configured pipelines and do not isolate model architecture. Qwen was selected after examining these development examples, so the five valid cases must not be described as a held-out test. Both adapters use immutable revisions recorded in every report.
 
 ## Timing
 
@@ -54,7 +57,7 @@ Fixtures were rendered from `examples/fixtures.html` in a browser and captured a
 
 ## Known limitations
 
-Only six tasks, English labels, a single desktop resolution, fictional products, and visible targets are covered. Mobile screens, high DPI, inaccessible targets, absent/ambiguous elements, adversarial screenshot text, and real application workflows require further evaluation. Model suggestions never trigger clicks.
+Only five valid tasks, English labels, a single desktop resolution, fictional products, and visible targets are covered. Mobile screens, high DPI, inaccessible targets, absent/ambiguous elements, adversarial screenshot text, and real application workflows require further evaluation. Model suggestions never trigger clicks.
 
 ## Next experiments
 

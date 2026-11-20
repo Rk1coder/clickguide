@@ -1,13 +1,20 @@
 import logging
 import os
 import threading
+import uuid
 from pathlib import Path
-
-import gradio as gr
 
 from clickguide.core import load_image
 from clickguide.model import create_engine
 from clickguide.service import GuideService
+from clickguide.storage import private_cache, prune_cache
+
+CACHE = private_cache(os.environ.get("CLICKGUIDE_CACHE_DIR"))
+prune_cache(CACHE)
+os.environ["GRADIO_TEMP_DIR"] = str(CACHE)
+
+# Gradio must discover the private cache after its environment has been configured.
+import gradio as gr  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 SERVICE = GuideService(create_engine(os.environ.get("CLICKGUIDE_MODEL", "qwen")))
@@ -36,8 +43,26 @@ def preview_upload(path):
         return None
 
 
-def run_locate(path, instruction, *, service=None):
+def invalidate_inputs(path, instruction, session):
+    session["token"] = uuid.uuid4().hex
+    session["inputs"] = (path, instruction)
+    return None, None, "Inputs changed. Locate the target to get a new suggestion.", None, None
+
+
+def _on_upload(path, instruction, session):
+    cleared = invalidate_inputs(path, instruction, session)
+    return preview_upload(path), *cleared
+
+
+def _controls(interactive):
+    return [gr.update(interactive=interactive) for _ in range(3)]
+
+
+def run_locate(path, instruction, session=None, *, service=None):
     service = service or SERVICE
+    ticket = session["token"] if session is not None else None
+    if session is not None and session.get("inputs") not in (None, (path, instruction)):
+        return (gr.skip(),) * 5
     if not path:
         return None, None, "Upload a screenshot to begin.", None, None
     try:
@@ -51,7 +76,7 @@ def run_locate(path, instruction, *, service=None):
             "Inspect the red crosshair before acting. This model can suggest a point even "
             "when the requested target is absent or ambiguous."
         )
-        return (
+        output = (
             result["image_path"],
             result["crop_path"],
             status,
@@ -59,22 +84,26 @@ def run_locate(path, instruction, *, service=None):
             result["image_path"],
         )
     except ValueError as exc:
-        return None, None, str(exc), None, None
+        output = None, None, str(exc), None, None
     except Exception:
         LOGGER.exception("Local grounding failed")
-        return (
+        output = (
             None,
             None,
             "Local inference failed. Check the server log and available memory, then retry.",
             None,
             None,
         )
+    if session is not None and session["token"] != ticket:
+        return (gr.skip(),) * 5
+    return output
 
 
 def build_app():
     sample_paths = [ROOT / "examples" / f"{scene}.jpg" for scene in ("settings", "board", "files")]
     gr.set_static_paths(paths=sample_paths)
     with gr.Blocks(title="ClickGuide", delete_cache=(60, 3600)) as demo:
+        session = gr.State(value={"token": "initial", "inputs": None})
         gr.Markdown(
             "# ClickGuide\nFind your next click.\n\n"
             "Upload a screenshot and describe one target in English. A local model suggests a location "
@@ -142,15 +171,31 @@ def build_app():
                 with gr.Row():
                     report_file = gr.File(label="Download JSON report", interactive=False)
                     marked_file = gr.File(label="Download annotated PNG", interactive=False)
-        locate.click(
+        outputs = [marked, crop, status, report_file, marked_file]
+        request = locate.click(
+            lambda: _controls(False), outputs=[upload, query, locate], queue=False, api_name=False
+        )
+        prediction = request.then(
             run_locate,
-            [upload, query],
-            [marked, crop, status, report_file, marked_file],
+            [upload, query, session],
+            outputs,
             api_name="locate",
             concurrency_limit=1,
             concurrency_id="model",
         )
-        upload.change(preview_upload, upload, original, api_name="preview", concurrency_limit=2)
+        prediction.then(
+            lambda: _controls(True), outputs=[upload, query, locate], queue=False, api_name=False
+        )
+        upload.change(
+            _on_upload,
+            [upload, query, session],
+            [original, *outputs],
+            api_name=False,
+            concurrency_limit=2,
+        )
+        query.change(
+            invalidate_inputs, [upload, query, session], outputs, queue=False, api_name=False
+        )
         gr.Markdown(
             f"**Local-first preview** · {SERVICE.engine.model_id.split('/')[-1]} · English instructions · Temporary outputs expire after one hour. Original examples contain fictional data."
         )
@@ -160,6 +205,7 @@ def build_app():
 def _cleanup_loop():
     while not threading.Event().wait(60):
         SERVICE.prune()
+        prune_cache(CACHE)
 
 
 if __name__ == "__main__":

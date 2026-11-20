@@ -199,47 +199,16 @@
         "notice": "Model suggestion; coordinate validity does not establish target correctness."
       },
       "hit": true
-    },
-    {
-      "id": "files-download",
-      "target_box": [
-        842,
-        277,
-        946,
-        315
-      ],
-      "report": {
-        "schema_version": 1,
-        "status": "suggested",
-        "instruction": "Download the quarterly report",
-        "normalized_point": [
-          0.888,
-          0.464
-        ],
-        "pixel_point": [
-          888,
-          297
-        ],
-        "image_size": [
-          1000,
-          640
-        ],
-        "coordinate_frame": "EXIF-oriented RGB screenshot; zero-based pixel coordinates",
-        "image_sha256": "cb954834cb32b94eb04cced4286232ca8822c6abe8609b36480d5eddc4fc4d9c",
-        "model": {
-          "id": "Qwen/Qwen3-VL-2B-Instruct",
-          "revision": "89644892e4d85e24eaac8bacfd4f463576704203"
-        },
-        "raw_prediction": "```json\n{\n  \"point_2d\": [888, 464],\n  \"label\": \"Download the quarterly report.\"\n}\n```",
-        "raw_coordinate_scale": 1000,
-        "elapsed_seconds": 13.035,
-        "created_at": "2026-11-20T12:22:42.744526+00:00",
-        "notice": "Model suggestion; coordinate validity does not establish target correctness."
-      },
-      "hit": true
     }
   ],
-  "hits": 5,
+  "hits": 4,
   "errors": 0,
-  "total": 6
+  "total": 5,
+  "source_archive": "v1/qwen-cpu.json",
+  "excluded_cases": [
+    {
+      "id": "files-download",
+      "reason": "Invalid semantic annotation: the only Download button belongs to Project brief.pdf, not Quarterly report.pdf. Excluded without modifying raw historical measurements."
+    }
+  ]
 }

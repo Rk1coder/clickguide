@@ -53,16 +53,5 @@
       960,
       64
     ]
-  },
-  {
-    "id": "files-download",
-    "image": "files.jpg",
-    "instruction": "Download the quarterly report",
-    "target_box": [
-      842,
-      277,
-      946,
-      315
-    ]
   }
 ]

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from app import preview_upload, run_locate
+from app import invalidate_inputs, preview_upload, run_locate
 from clickguide.service import GuideService
 
 
@@ -56,3 +56,29 @@ def test_uploaded_image_preview_uses_same_validation(tmp_path):
     assert preview_upload(None) is None
     image.write_bytes(b"invalid")
     assert preview_upload(str(image)) is None
+
+
+def test_changed_inputs_clear_exports_and_invalidate_old_request():
+    state = {"token": "old", "inputs": None}
+    output = invalidate_inputs("new.png", "New target", state)
+    assert output[0] is None and output[1] is None and output[3] is None and output[4] is None
+    assert state["token"] != "old"
+    assert state["inputs"] == ("new.png", "New target")
+
+
+def test_obsolete_completion_cannot_restore_old_results(tmp_path):
+    image = tmp_path / "image.png"
+    Image.new("RGB", (50, 50)).save(image)
+    state = {"token": "old", "inputs": (str(image), "Open settings")}
+
+    class ChangingEngine(Engine):
+        def predict(self, image, instruction):
+            invalidate_inputs("new.png", "Another target", state)
+            return "[0.5, 0.5]"
+
+    service = GuideService(ChangingEngine(), tmp_path / "reports")
+    output = run_locate(str(image), "Open settings", state, service=service)
+    assert all(
+        isinstance(value, dict) and value.get("__type__") == "update" and "value" not in value
+        for value in output
+    )

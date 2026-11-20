@@ -23,5 +23,5 @@ def test_missing_offline_model_is_a_failed_run(tmp_path):
     )
     assert run.returncode != 0
     record = json.loads(output.read_text())
-    assert record["errors"] == 6
+    assert record["errors"] == 5
     assert record["hits"] == 0

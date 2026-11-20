@@ -107,3 +107,24 @@ def test_instruction_normalization_and_bounds():
     for value in ("", "ab", "x" * 301, None):
         with pytest.raises(ValueError):
             validate_instruction(value)
+
+
+def test_coordinate_response_cannot_hide_a_second_point_in_a_comment():
+    with pytest.raises(ValueError):
+        parse_point("[0.2, 0.3] # [0.8, 0.9]")
+
+
+@pytest.mark.parametrize("corruption", ["missing_iend", "bad_crc"])
+def test_png_container_integrity_is_verified(tmp_path, corruption):
+    path = tmp_path / "corrupt.png"
+    Image.new("RGB", (10, 10), "blue").save(path)
+    data = bytearray(path.read_bytes())
+    if corruption == "missing_iend":
+        data = data[:-12]
+    else:
+        start = data.index(b"IDAT")
+        length = int.from_bytes(data[start - 4 : start], "big")
+        data[start + 4 + length] ^= 1
+    path.write_bytes(data)
+    with pytest.raises(ValueError):
+        load_image(path)
