@@ -10,7 +10,7 @@ from clickguide.model import create_engine
 from clickguide.service import GuideService
 
 ROOT = Path(__file__).resolve().parent
-SERVICE = GuideService(create_engine(os.environ.get("CLICKGUIDE_MODEL", "showui")))
+SERVICE = GuideService(create_engine(os.environ.get("CLICKGUIDE_MODEL", "qwen")))
 LOGGER = logging.getLogger(__name__)
 
 CSS = """
