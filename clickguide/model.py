@@ -116,11 +116,10 @@ class QwenEngine:
                     weights_only=True,
                 ).eval()
             prompt = (
-                "Point to the center of the UI element for this instruction: "
+                "Point to the following UI target: "
                 + instruction
-                + '. Return only JSON: {"point_2d": [x, y]}. Use integer coordinates in the '
-                "native Qwen3-VL range 0 to 1000, relative to the entire screenshot. "
-                "Return one point, not a bounding box."
+                + '. Output its center as JSON {"point_2d": [x, y]} using integer '
+                "coordinates from 0 to 1000 relative to the entire screenshot."
             )
             messages = [
                 {
@@ -141,7 +140,7 @@ class QwenEngine:
             with torch.inference_mode():
                 output = self._model.generate(
                     **inputs,
-                    max_new_tokens=32,
+                    max_new_tokens=96,
                     do_sample=False,
                     use_cache=True,
                     temperature=None,
@@ -153,8 +152,11 @@ class QwenEngine:
 
 
 def parse_qwen_point(raw):
-    if not isinstance(raw, str) or len(raw) > 200:
+    if not isinstance(raw, str) or len(raw) > 512:
         raise ValueError("Model did not return a valid native point.")
+    raw = raw.strip()
+    if raw.startswith("```json\n") and raw.endswith("\n```"):
+        raw = raw[8:-4]
     try:
         value = json.loads(raw)
     except (ValueError, TypeError) as exc:

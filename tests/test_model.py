@@ -36,3 +36,10 @@ def test_qwen_native_coordinates_are_explicitly_scaled(raw):
 def test_qwen_rejects_ambiguous_units_and_multiple_targets(raw):
     with pytest.raises(ValueError):
         parse_qwen_point(raw)
+
+
+def test_qwen_accepts_one_complete_json_code_fence():
+    assert parse_qwen_point('```json\n{"point_2d":[851,874]}\n```') == (0.851, 0.874)
+    for raw in ['```json\n{"point_2d":[851,874]}', "Here: ```json\n[851,874]\n```"]:
+        with pytest.raises(ValueError):
+            parse_qwen_point(raw)

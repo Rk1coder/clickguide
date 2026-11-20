@@ -43,7 +43,7 @@ def main():
             "settings": {
                 "min_pixels": MIN_PIXELS if args.model == "showui" else 65536,
                 "max_pixels": MAX_PIXELS if args.model == "showui" else 262144,
-                "max_new_tokens": 32,
+                "max_new_tokens": 32 if args.model == "showui" else 96,
                 "device": "cpu",
                 "dtype": "bfloat16" if args.model == "showui" else "float32",
                 "image_processor": "fast",
