@@ -6,11 +6,11 @@ from pathlib import Path
 import gradio as gr
 
 from clickguide.core import load_image
-from clickguide.model import ShowUIEngine
+from clickguide.model import create_engine
 from clickguide.service import GuideService
 
 ROOT = Path(__file__).resolve().parent
-SERVICE = GuideService(ShowUIEngine())
+SERVICE = GuideService(create_engine(os.environ.get("CLICKGUIDE_MODEL", "showui")))
 LOGGER = logging.getLogger(__name__)
 
 CSS = """
@@ -77,7 +77,7 @@ def build_app():
     with gr.Blocks(title="ClickGuide", delete_cache=(60, 3600)) as demo:
         gr.Markdown(
             "# ClickGuide\nFind your next click.\n\n"
-            "Upload a screenshot and describe one target in English. ShowUI suggests a location "
+            "Upload a screenshot and describe one target in English. A local model suggests a location "
             "you can inspect. Runs on this machine; the application does not control your desktop.",
             elem_id="masthead",
         )
@@ -108,9 +108,9 @@ def build_app():
                 )
                 gr.Examples(
                     examples=[
-                        [str(sample_paths[0]), "Open Notifications settings"],
+                        [str(sample_paths[0]), "Save changes"],
                         [str(sample_paths[1]), "Create a new task"],
-                        [str(sample_paths[2]), "Download the quarterly report"],
+                        [str(sample_paths[2]), "Upload a file"],
                     ],
                     inputs=[upload, query],
                     label="Try an original example",
@@ -152,7 +152,7 @@ def build_app():
         )
         upload.change(preview_upload, upload, original, api_name="preview", concurrency_limit=2)
         gr.Markdown(
-            "**Local-first preview** · ShowUI-2B · English instructions · Temporary outputs expire after one hour. Original examples contain fictional data."
+            f"**Local-first preview** · {SERVICE.engine.model_id.split('/')[-1]} · English instructions · Temporary outputs expire after one hour. Original examples contain fictional data."
         )
     return demo.queue(max_size=4, default_concurrency_limit=1)
 

@@ -10,7 +10,8 @@ source and non-sensitive measured output images on GitHub. Public copy is Englis
 
 1. ShowUI-2B screenshot grounding: chosen starting point because the model is trained
    for coordinate prediction. CPU inference will be measured, not called real time.
-2. General Qwen3-VL: useful future comparison, outside the first release.
+2. General Qwen3-VL: added as a measured comparison after ShowUI missed 3/6 targets.
+   Both original annotations and the ShowUI baseline remain unchanged.
 3. Fully autonomous desktop control: outside scope; users inspect a suggestion.
 
 ## First release
@@ -18,6 +19,11 @@ source and non-sensitive measured output images on GitHub. Public copy is Englis
 - Python 3.12, PyTorch CPU, Transformers, Pillow, Gradio; separate `develop` repo.
 - Model `showlab/ShowUI-2B`, immutable revision
   `cabec4fcc48d15ffd3efe0b33ea9bc7d41509d60`. No remote Python model code.
+- Comparison model `Qwen/Qwen3-VL-2B-Instruct`, immutable revision
+  `89644892e4d85e24eaac8bacfd4f463576704203`, selected through `CLICKGUIDE_MODEL=qwen`.
+  Its native integer `point_2d` coordinates use scale 1000, explicitly normalized
+  by a separate strict parser. One complete JSON code fence is accepted; truncated
+  responses, bounding boxes, mixed units, and multiple targets are rejected.
 - English instruction, 3–300 characters; one PNG/JPEG, <=10 MiB, <=12 million
   pixels, <=4096 pixels per edge; reject animation and malformed images.
 - Correct EXIF orientation before inference; alpha composited over white. Report
@@ -29,9 +35,12 @@ source and non-sensitive measured output images on GitHub. Public copy is Englis
   raw prediction, model revision, elapsed time, and normalized/pixel location.
 - Lazy single model instance, serialized inference; loopback by default. No browser
   clicking, credentials, paid services, or automatic publishing of user uploads.
-- CPU inference uses a bounded image budget and 32 generated tokens. Raw coordinate
+- CPU inference uses bounded image budgets and 32 ShowUI / 96 Qwen generated tokens. Raw coordinate
   validity is not target correctness. ShowUI may suggest a location for absent or
   ambiguous targets; no confidence percentage or reliable abstention is promised.
+- Baseline ShowUI: CPU bfloat16, 200704–401408 image pixels. Qwen comparison:
+  CPU float32, 65536–262144 image pixels. Both default to four CPU threads and greedy
+  decoding. This compares configured pipelines, not a controlled model benchmark.
 - Session files get separate unpredictable directories; keep at most 32 report
   directories, expire after one hour. Gradio cache has the same age limit. Only
   immutable public examples bypass expiration.
