@@ -1,3 +1,4 @@
+import json
 import os
 import threading
 
@@ -80,6 +81,8 @@ class ShowUIEngine:
 class QwenEngine:
     model_id = "Qwen/Qwen3-VL-2B-Instruct"
     revision = "89644892e4d85e24eaac8bacfd4f463576704203"
+    coordinate_scale = 1000
+    parse_prediction = staticmethod(lambda raw: parse_qwen_point(raw))
 
     def __init__(self):
         self._model = None
@@ -113,10 +116,11 @@ class QwenEngine:
                     weights_only=True,
                 ).eval()
             prompt = (
-                "Locate the UI target described below in this screenshot. Return ONLY a JSON "
-                "array [x, y] for its center point. Coordinates are normalized to [0, 1], "
-                "where (0,0) is the top-left and (1,1) is the bottom-right of the entire image. "
-                "Do not return a bounding box or explanation. Target: " + instruction
+                "Point to the center of the UI element for this instruction: "
+                + instruction
+                + '. Return only JSON: {"point_2d": [x, y]}. Use integer coordinates in the '
+                "native Qwen3-VL range 0 to 1000, relative to the entire screenshot. "
+                "Return one point, not a bounding box."
             )
             messages = [
                 {
@@ -146,6 +150,26 @@ class QwenEngine:
                 )
             generated = output[:, inputs.input_ids.shape[1] :]
             return self._processor.batch_decode(generated, skip_special_tokens=True)[0].strip()
+
+
+def parse_qwen_point(raw):
+    if not isinstance(raw, str) or len(raw) > 200:
+        raise ValueError("Model did not return a valid native point.")
+    try:
+        value = json.loads(raw)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("Model did not return a valid native point.") from exc
+    if isinstance(value, list) and len(value) == 1:
+        value = value[0]
+    if isinstance(value, dict):
+        value = value.get("point_2d")
+    if (
+        not isinstance(value, list)
+        or len(value) != 2
+        or any(type(v) is not int or not 0 <= v <= 1000 for v in value)
+    ):
+        raise ValueError("Expected one integer point in the native 0–1000 coordinate range.")
+    return value[0] / 1000, value[1] / 1000
 
 
 def create_engine(name):

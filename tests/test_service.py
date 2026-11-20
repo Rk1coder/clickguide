@@ -79,6 +79,13 @@ def test_invalid_prediction_produces_no_export(tmp_path, screenshot, raw):
     assert list((tmp_path / "reports").iterdir()) == []
 
 
+def test_invalid_prediction_retains_raw_output_for_evaluation(tmp_path, screenshot):
+    service = GuideService(FixedEngine("[850, 120]"), tmp_path / "reports")
+    with pytest.raises(ValueError) as exc:
+        service.locate(screenshot, "Open settings")
+    assert exc.value.raw_prediction == "[850, 120]"
+
+
 def test_expiration_and_report_count(tmp_path, screenshot):
     service = GuideService(FixedEngine(), tmp_path / "reports", max_reports=2)
     first = service.locate(screenshot, "Open settings")

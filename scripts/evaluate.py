@@ -35,6 +35,8 @@ def main():
             shutil.copyfile(result["image_path"], images / f"{prefix}{task['id']}.png")
         except Exception as exc:
             row.update(hit=False, error=f"{type(exc).__name__}: {exc}")
+            if hasattr(exc, "raw_prediction"):
+                row["raw_prediction"] = exc.raw_prediction
         results.append(row)
         record = {
             "scope": "Original fictional development tasks; not an independent benchmark.",

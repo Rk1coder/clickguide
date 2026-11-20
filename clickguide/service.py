@@ -25,6 +25,12 @@ def score_point(point, box):
     return x1 <= x <= x2 and y1 <= y <= y2
 
 
+class PredictionError(ValueError):
+    def __init__(self, message, raw_prediction):
+        super().__init__(message)
+        self.raw_prediction = raw_prediction
+
+
 class GuideService:
     def __init__(self, engine, root=None, max_reports=32):
         self.engine = engine
@@ -62,7 +68,10 @@ class GuideService:
         with self._lock:
             started = time.perf_counter()
             raw = self.engine.predict(image, instruction)
-            point = parse_point(raw)
+            try:
+                point = getattr(self.engine, "parse_prediction", parse_point)(raw)
+            except ValueError as exc:
+                raise PredictionError(str(exc), raw) from exc
             elapsed = time.perf_counter() - started
             pixel = pixel_point(point, image.size)
             buffer = io.BytesIO()
@@ -78,6 +87,7 @@ class GuideService:
                 "image_sha256": hashlib.sha256(buffer.getvalue()).hexdigest(),
                 "model": {"id": self.engine.model_id, "revision": self.engine.revision},
                 "raw_prediction": raw,
+                "raw_coordinate_scale": getattr(self.engine, "coordinate_scale", 1),
                 "elapsed_seconds": round(elapsed, 3),
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "notice": "Model suggestion; coordinate validity does not establish target correctness.",

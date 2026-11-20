@@ -1,6 +1,6 @@
 import pytest
 
-from clickguide.model import create_engine
+from clickguide.model import create_engine, parse_qwen_point
 
 
 def test_unknown_backend_does_not_silently_fall_back():
@@ -13,3 +13,26 @@ def test_selectable_backends_remain_lazy_and_distinct():
     qwen = create_engine("qwen")
     assert showui._model is None and qwen._model is None
     assert showui.model_id != qwen.model_id
+
+
+@pytest.mark.parametrize(
+    "raw", ['{"point_2d":[500,1000]}', '[{"point_2d":[500,1000]}]', "[500,1000]"]
+)
+def test_qwen_native_coordinates_are_explicitly_scaled(raw):
+    assert parse_qwen_point(raw) == (0.5, 1.0)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "[0.5,0.2]",
+        "[true,200]",
+        "[1001,0]",
+        "[-1,0]",
+        "[10,20,30,40]",
+        '[{"point_2d":[1,2]},{"point_2d":[3,4]}]',
+    ],
+)
+def test_qwen_rejects_ambiguous_units_and_multiple_targets(raw):
+    with pytest.raises(ValueError):
+        parse_qwen_point(raw)
