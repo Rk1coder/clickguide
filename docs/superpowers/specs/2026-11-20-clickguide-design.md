@@ -40,7 +40,7 @@ source and non-sensitive measured output images on GitHub. Public copy is Englis
 
 Use original fictional browser interfaces: workspace settings, project board, and
 file browser, with 2 English targets each. Save browser-rendered input screenshots
-and manually declared target boxes independently of inference. Run six fixed tasks
+and target boxes derived from fixture DOM geometry independently of inference. Run six fixed tasks
 once with the pinned model, record all results and timings, and score point-in-box.
 Model receives only screenshot pixels and instruction, never target annotations.
 No held-out/general-accuracy claim. Include failures as well as successes. No private

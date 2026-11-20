@@ -1,0 +1,59 @@
+"""Measure the pinned model on every original development task."""
+
+import argparse
+import json
+import shutil
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from clickguide.model import MAX_PIXELS, MIN_PIXELS, ShowUIEngine  # noqa: E402
+from clickguide.service import GuideService, score_point  # noqa: E402
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, default=Path("evaluation/local-cpu.json"))
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[1]
+    tasks = json.loads((root / "examples/tasks.json").read_text())
+    service = GuideService(ShowUIEngine())
+    results = []
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    images = root / "docs/images"
+    images.mkdir(parents=True, exist_ok=True)
+    for task in tasks:
+        row = {"id": task["id"], "target_box": task["target_box"]}
+        try:
+            result = service.locate(root / "examples" / task["image"], task["instruction"])
+            row["report"] = result["report"]
+            row["hit"] = score_point(result["report"]["pixel_point"], task["target_box"])
+            shutil.copyfile(result["image_path"], images / f"{task['id']}.png")
+        except Exception as exc:
+            row.update(hit=False, error=f"{type(exc).__name__}: {exc}")
+        results.append(row)
+        record = {
+            "scope": "Original fictional development tasks; not an independent benchmark.",
+            "settings": {
+                "min_pixels": MIN_PIXELS,
+                "max_pixels": MAX_PIXELS,
+                "max_new_tokens": 32,
+                "device": "cpu",
+                "dtype": "bfloat16",
+            },
+            "results": results,
+            "hits": sum(r["hit"] for r in results),
+            "total": len(results),
+        }
+        args.output.write_text(json.dumps(record, indent=2) + "\n")
+        print(
+            task["id"],
+            "HIT" if row["hit"] else "MISS",
+            row.get("error", row.get("report", {}).get("raw_prediction")),
+            flush=True,
+        )
+
+
+if __name__ == "__main__":
+    main()
