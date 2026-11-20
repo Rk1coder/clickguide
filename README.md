@@ -9,7 +9,9 @@ target location using a local vision-language model. It exposes the predicted
 coordinates, a magnified crop, and an auditable JSON report. It does not click
 buttons or control your computer.
 
-![Qwen3-VL suggestion for creating a task](docs/images/qwen-board-create.png)
+![ClickGuide local workbench with a real Qwen3-VL target prediction](docs/images/workbench-desktop.jpg)
+
+[Mobile layout](docs/images/workbench-mobile.jpg) · [Actual annotated PNG](docs/images/qwen-board-create.png)
 
 ## Run locally
 
