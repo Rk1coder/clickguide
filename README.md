@@ -11,7 +11,7 @@ buttons or control your computer.
 
 ![ClickGuide local workbench with a real Qwen3-VL target prediction](docs/images/workbench-desktop.jpg)
 
-[Mobile layout](docs/images/workbench-mobile.jpg) · [Actual annotated PNG](docs/images/qwen-board-create.png)
+[Input changes clear old results](docs/images/cleared-results.jpg) · [Actual annotated PNG](docs/images/qwen-board-create.png)
 
 ## Run locally
 
